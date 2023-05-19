@@ -48,6 +48,6 @@ from data_cleaning import DataCleaning
 # cleaned_orders = DataCleaning.clean_orders_data(orders)
 # imported_orders_data = DatabaseConnector.upload_to_db(cleaned_orders, 'orders_table')
 
-events = DataExtractor.extract_from_link('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
-cleaned_events = DataCleaning.clean_date_events_data(events)
-imported_events = DatabaseConnector.upload_to_db(cleaned_events, 'dim_date_times')
+# events = DataExtractor.extract_from_link('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
+# cleaned_events = DataCleaning.clean_date_events_data(events)
+# imported_events = DatabaseConnector.upload_to_db(cleaned_events, 'dim_date_times')

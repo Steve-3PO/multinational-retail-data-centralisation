@@ -254,6 +254,7 @@ class DataCleaning:
         orders['user_uuid'] = orders['user_uuid'].astype('string')
         orders['store_code'] = orders['store_code'].astype('string')
         orders['product_code'] = orders['product_code'].astype('string')
+        orders['card_number'] = orders['card_number'].astype('string')
         orders = orders.set_index('index')
         orders = orders.sort_index()
         orders = orders.drop(['level_0', 'first_name', 'last_name', '1'], axis = 1)
