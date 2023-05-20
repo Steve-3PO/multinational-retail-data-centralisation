@@ -72,6 +72,12 @@ class DataCleaning:
         
         return users
     
+    
+    
+    
+    
+    
+    
     def clean_card_data(dim_card_details):
         
         dim_card_details['card_number'] = dim_card_details['card_number'].astype('string')
@@ -105,6 +111,13 @@ class DataCleaning:
         dim_card_details['date_payment_confirmed'] = pd.to_datetime(dim_card_details['date_payment_confirmed'], format="%Y-%m-%d")
         dim_card_details['expiry_date'] = pd.to_datetime(dim_card_details['expiry_date'], format="%m/%y")
         return dim_card_details
+    
+    
+    
+    
+    
+    
+    
     
     def called_clean_store_data(api_db):
         api_db = api_db.set_index('index')
@@ -177,6 +190,14 @@ class DataCleaning:
         api_db['latitude'] = api_db['latitude'].apply(standardise_longlat)
         
         return api_db
+    
+    
+    
+    
+    
+    
+    
+    
         
     def convert_product_weights(df):
         df = df[df['weight'].str.len() < 10]
@@ -203,6 +224,13 @@ class DataCleaning:
         
         df['weight'] = df['weight'].apply(standardise_weight)
         return df
+    
+    
+    
+    
+    
+    
+    
     
     def clean_products_data(df):
         df.rename(columns = {'Unnamed: 0':'index'}, inplace = True)
@@ -248,6 +276,15 @@ class DataCleaning:
         df['product_name'] = df['product_name'].astype('string')
         
         return df
+    
+    
+    
+    
+    
+    
+    
+    
+    
       
     def clean_orders_data(orders):
         orders['date_uuid'] = orders['date_uuid'].astype('string')
@@ -259,6 +296,13 @@ class DataCleaning:
         orders = orders.sort_index()
         orders = orders.drop(['level_0', 'first_name', 'last_name', '1'], axis = 1)
         return orders
+    
+    
+    
+    
+    
+    
+    
     
     def clean_date_events_data(events):
         events = events[events['day'].str.len() <= 2]
