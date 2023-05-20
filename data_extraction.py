@@ -42,12 +42,3 @@ class DataExtractor:
     def extract_from_link(link):
         return pd.read_json(link)
         
-# db = DatabaseConnector() 
-# users = DataExtractor.read_rds_table(db, 'legacy_users')
-
-
-#with open('api_key.yaml', 'r') as file:
-    #key_dict = yaml.load(file, Loader=yaml.FullLoader)
-#num = DataExtractor.list_number_of_stores('https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores', key_dict)
-#api_db = DataExtractor.retrieve_stores_data(f'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/', key_dict)
-#print(api_db)

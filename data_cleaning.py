@@ -282,12 +282,3 @@ class DataCleaning:
         return events
         
     
-#db = DatabaseConnector() 
-#users = DataExtractor.read_rds_table(db, 'legacy_users')        
-#cleaned_data = DataCleaning.clean_user_data(users)
-#print(cleaned_data)
-
-# dim_card_details = DatabaseConnector.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
-# cleaned_card_data = DataCleaning.clean_card_data(dim_card_details)
-# imported_cards = DatabaseConnector.upload_to_db(cleaned_card_data, 'dim_card_details')
-

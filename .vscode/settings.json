@@ -5,7 +5,16 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "testconnection",
+            "name": "tasks_connection",
+            "database": "sales_data",
+            "username": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "data_cleaning_connection",
             "database": "sales_data",
             "username": "postgres"
         }

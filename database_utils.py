@@ -48,22 +48,3 @@ class DatabaseConnector:
         return df
     
     
-#db = DatabaseConnector() 
-#db.read_db_creds() 
-#db.init_db_engine()
-#db.list_db_tables()
-                
-#data = DatabaseConnector.read_db_creds()
-#print(data)
-#engine = DatabaseConnector.init_db_engine(data)
-#print(engine)
-#tables = DatabaseConnector.list_db_tables(engine)
-
-
-# db = DatabaseConnector() 
-# users = DataExtractor.read_rds_table(db, 'legacy_users')     
-# cleaned_data = DataCleaning.clean_user_data(users)
-# imported = DatabaseConnector.upload_to_db(cleaned_data, 'dim_users')
-
-#dim_card_details = DatabaseConnector.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
-#print(dim_card_details)
