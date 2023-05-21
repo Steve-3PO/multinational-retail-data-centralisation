@@ -29,6 +29,10 @@
 
 ### Set up the database
 
+To initialise the database, I use pgAdmin 4 and its easy functionality tying into VSCode for this project. The Database, ```sales_data```, will serve as the blank canvas that extracted data will be imported to. 
+
+![InitialiseDatabase](/images/setting_up_database.png)
+
 ### Initialise the 3 project Classes
 
 ### Extract and clean the user data
