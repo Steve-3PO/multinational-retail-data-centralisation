@@ -85,6 +85,78 @@ def read_rds_table(instance, table_name):
         print("Invalid Table Name")
 ```
 
+The database is now available and ready to be cleaned. This is done with the method ```clean_user_data``` in the DataCleaning Class. Null values, errors with dates and incorrectly typed values/rows are all removed using the below function.
+
+```python
+def clean_user_data(users):
+    users['first_name'] = users['first_name'].astype('string')
+    users['last_name'] = users['last_name'].astype('string')
+    users['company'] = users['company'].astype('string')
+    users['email_address'] = users['email_address'].astype('string')
+    users['address'] = users['address'].astype('string')
+    users['country'] = users['country'].astype('category')
+    users['country_code'] = users['country_code'].astype('category')
+    users['phone_number'] = users['phone_number'].astype('string')
+    users['user_uuid'] = users['user_uuid'].astype('string')
+        
+    users = users.set_index('index')
+        
+    users = users[users['country_code'].str.len() < 4]
+    users['country_code'] = users['country_code'].replace('GGB', 'GB')
+        
+    def standardise_phone_number(phone_number):
+        phone_number = phone_number.replace(" ", "")
+        phone_number = phone_number.replace("(", "")
+        phone_number = phone_number.replace(")", "")
+        phone_number = phone_number.replace(".", "")
+        phone_number = phone_number.replace("-", "")
+        phone_number = phone_number.replace("x", "")
+        phone_number = list(phone_number)
+        if phone_number[0] == '+':
+            phone_number = phone_number[3:]
+        phone_number = ''.join(phone_number)
+        return phone_number
+
+    users['phone_number'] = users['phone_number'].apply(standardise_phone_number)
+    users['phone_number'] = users['phone_number'].astype('string')
+        
+    def standardise_date(date):
+    
+        if len(date) == 10:
+            return date
+    
+        months_dict = {'January':'01', 'February':'02', 'March':'03', 'April':'04', 
+                    'May':'05', 'June':'06', 'July':'07', 'August':'08',
+                    'September':'09', 'October':'10', 'November':'11', 'December':'12'}
+    
+        split_date = date.split(" ")
+        day = split_date[-1]
+        if split_date[0][0].isalpha():
+            month = split_date[0]
+            year = split_date[1]
+        else:
+            month = split_date[1]
+            year = split_date[0]
+        month = months_dict[month]
+        return f"{year}-{month}-{day}"
+        
+    users['date_of_birth'] = users['date_of_birth'].apply(standardise_date)
+    users["date_of_birth"] = pd.to_datetime(users["date_of_birth"], format="%Y-%m-%d")
+    users['join_date'] = users['join_date'].apply(standardise_date)
+    users["join_date"] = pd.to_datetime(users["join_date"], format="%Y-%m-%d")
+    users = users[users["join_date"] > users["date_of_birth"]]
+        
+    return users
+```
+
+Once cleaned it is now transfered using the ```upload_to_db``` method in the DataConnector Class.
+
+```python
+def upload_to_db(input_database, table_name):
+    con = create_engine(f"postgresql+psycopg2://postgres:password@localhost:5432/sales_data")
+    input_database.to_sql(table_name, con=con, if_exists='replace')
+```
+
 ### Extract and clean the card details
 
 ### Extract and clean the deatils of each store
