@@ -43,7 +43,7 @@ To extract, clean and upload the data we will be using 3 different Classes. ```d
 
 The user data is stored within an AWS RDS Database in the cloud. Credentials for the host, password, user, database and port are contained within the ```db_creds.yaml``` file which are used to access and extract from AWS. 
 
-```
+```python
 with open('db_creds.yaml', 'r') as file:
     self.data = yaml.load(file, Loader=yaml.FullLoader)
 ```
