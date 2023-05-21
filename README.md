@@ -159,6 +159,21 @@ def upload_to_db(input_database, table_name):
 
 ### Extract and clean the card details
 
+The raw form of the card details data is a PDF file. The package ```tabula.py``` can be used to extract this data in its raw form and convert it directly to a pandas Dataframe.
+
+As tabula returns a list of dictionaries from the ```read_pdf``` function, the list must be concatinated before we can return a dataframe.
+
+```python
+def retrieve_pdf_data(link):
+    list_of_dbs = tabula.read_pdf(link, pages='all')
+    df = pd.concat(list_of_dbs, ignore_index=True)
+    return df
+```
+
+Once returned we can proceed to clean the card data. This is done in the ```clean_card_data``` method within the DataCleaning Class. As the datacleaning follows similar procedures to the user data, the code I have decided to not list however it is there to read in the method as mentioned if you wish to see exactly.
+
+The data is then uploaded again using the ```upload_to_db``` method. 
+
 ### Extract and clean the deatils of each store
 
 ### Extract and clean the product details
