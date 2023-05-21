@@ -43,9 +43,46 @@ To extract, clean and upload the data we will be using 3 different Classes. ```d
 
 The user data is stored within an AWS RDS Database in the cloud. Credentials for the host, password, user, database and port are contained within the ```db_creds.yaml``` file which are used to access and extract from AWS. 
 
+
+By reading the data into our DataCleaning class we can keep the code neat.
+
 ```python
 with open('db_creds.yaml', 'r') as file:
     self.data = yaml.load(file, Loader=yaml.FullLoader)
+```
+Creating an instance of this class and assigning the credentials will make them callable as dictionary items.
+```python
+def init_db_engine(self):
+    DATABASE_TYPE = 'postgresql'
+    DBAPI = 'psycopg2'
+    HOST = self.data['RDS_HOST']
+    USER = self.data['RDS_USER']
+    PASSWORD = self.data['RDS_PASSWORD']
+    DATABASE = self.data['RDS_DATABASE']
+    PORT = self.data['RDS_PORT']
+    self.engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+```
+The create_engine function is ```sqlalchemy``` functionality which must be imported prior. As this will return the endpoint which contains multiple tables, we will need to find the exact table we wish to use. To get around this issue, the method below uses the ```inspect``` function from ```sqlalchemy``` which will take in the engine above and return the table names.
+
+```python
+def list_db_tables(self):
+    inspector = inspect(self.engine)
+    self.tables = inspector.get_table_names() 
+    return self.tables
+```
+
+In the DataExtractor class, the ```read_rds_table``` method will take the returned engine, table names and the table we wish to extract and in turn return a pandas Dataframe which we can proceed with.
+
+```python
+def read_rds_table(instance, table_name):
+    instance.read_db_creds()
+    engine = instance.init_db_engine()
+    tables = instance.list_db_tables()
+    if table_name in tables:
+        users = pd.read_sql_table(table_name, engine)
+        return users
+    else:
+        print("Invalid Table Name")
 ```
 
 ### Extract and clean the card details
