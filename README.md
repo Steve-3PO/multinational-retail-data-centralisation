@@ -174,15 +174,80 @@ Once returned we can proceed to clean the card data. This is done in the ```clea
 
 The data is then uploaded again using the ```upload_to_db``` method. 
 
-### Extract and clean the deatils of each store
+### Extract and clean the details of each store
+
+The data for the stores are retried through the use of an API. To connect to the API, the API key must be included in the retrieval and is contained in the ```api_key.yaml``` file. The API has 2 GET methods, one which will return the number of stores, and the other will retrieve the data for each of them. The latter endpoint is of the form ```https://.../{store_number}```. 
+
+The method ```list_number_of_stores``` within the DataExtractor Class retrieves the number of stores that exist from the endpoints. Using the ```requests``` library, we can access the endpoint as shown below.
+
+```python
+def list_number_of_stores(no_of_stores_endpoint, header_dict):
+    response = requests.get(no_of_stores_endpoint, headers=header_dict)
+    num = response.json()['number_stores']
+    return num
+```
+
+Once the total store number number is known, a for loop is used to individually access each store endpoint and append together with an empty list. As this will create a list of dictionaries, the ```.DataFrame``` function is used to convert to one global Dataframe. It is important to note that the ```header_dict``` is the credentials from the yaml file extracted to a dictionary variable.
+
+```python
+def retrieve_stores_data(retrieve_a_store_endpoint, header_dict):
+    lst2 = []
+    for r in range(num):
+        curr_string = retrieve_a_store_endpoint + f'{r}'
+        response = requests.get(curr_string, headers=header_dict)
+        output = response.json()
+        lst2.append(output)
+    return pd.DataFrame(lst2)
+```
+
+Now the dataframe is obtained, it is cleaned and uploaded in the same procedure as defined previously.
 
 ### Extract and clean the product details
 
+The product data is stored in CSV format in an S3 bucket on AWS. To extract this data, the ```boto3``` package must be installed and imported prior. As the url provided is ```s3://data-handling-public/products.csv``` we must separate this to utilise the ```download_file``` functionality. 
+
+```python
+def extract_from_s3(url_address):
+    s3 = boto3.client('s3')
+    url_address = url_address.split('/')
+    s3.download_file(url_address[-2], url_address[-1], 's3_product_data.csv')
+    uncleaned_product_data = pd.read_csv('s3_product_data.csv')
+    return uncleaned_product_data
+```
+
+Fortunately, the ```download_file``` function will provide a CSV file which can be directly converted to a DataFrame with ```read_csv```. Allowing it to be cleaned and transfered over the pgadmin in the same methods defined above for the user data.
+
+It is important to note that an extra step of converting product weights was used here. The method ```convert_product_weights``` is listed below which takes the value, finds the unit multiplier and removes and unnecessary errors in the listing of the weight such as special characters.
+
+```python
+def standardise_weight(weight):
+    if weight == 'nan':
+        return weight
+    if 'kg' in weight:
+        multiplier = 1
+    elif 'k' not in weight:
+        if 'oz' not in weight:
+            multiplier = 1000
+        else:
+            multiplier = 35.274
+    output = ''
+    for letter in weight:
+        if letter.isnumeric() or letter == '.':
+            output += letter
+        elif letter == 'x':
+            multiplier = multiplier / float(output)
+            output = ''
+        elif letter.isalpha():
+            return round(float(output)/multiplier, 3)
+```
+
 ### Retrieve and clean the orders table
+
+The orders table which acts as the single source of truth for all orders the company has made in the past is stored in a database on AWS RDS. Fortunately, reusing the ```list_db_tables``` and ```read_rds_table``` will return the Dataframe ready for cleaning and importing again with the ```upload_to_db``` method.
 
 ### Retrieve and clean the data events data
 
-
+The final source of data is a JSON file containing the details of when each sale happened, as well as related attributes. The file is stored on S3 and can be found at the following link ```https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json```. As this link is intact and usable instantly it is possible to just use the ```read_json``` function to return the unclean DataFrame.
 
 ## M2 - Create the database schema
 
