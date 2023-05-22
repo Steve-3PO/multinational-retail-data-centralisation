@@ -253,28 +253,211 @@ The final source of data is a JSON file containing the details of when each sale
 
 ### Case the columns to the correct types
 
+Although cleaning involved type casting the data correctly, often this can lead to errors if it is not taken across to pgadmin correctly. The data for these tables must be correctly typed so that we can create key constraints and call the data accurately. The types are viewable in pgadmin however it is important to note that you cannot change types to just anything. Only types that are related to the current type of the data column are provided. This means that changes must be made in using SQL queries first.
+
+![type_casting](/images/type_casting.png)
+
+UUID's of all tables must be converted to the UUID data type, which is not a string to clarify. The example below casts the user_uuid within the orders table to the UUID data type.
+
+```sql
+ALTER TABLE orders_table
+ALTER COLUMN user_uuid TYPE uuid USING user_uuid ::uuid
+```
+
+Card numbers, names, addresses must also be cast correctly. Varchars are used to limit the input taken from the user and provide a localised constraint on the column.
+
+```sql
+ALTER TABLE orders_table
+ALTER COLUMN card_number TYPE varchar(20)
+```
+
+Quantities can be kept in any form of integer however I choose to represent these as ```SMALLINT``` given that quantities of stock generally don't get too large.
+
+```sql
+ALTER TABLE orders_table
+ALTER COLUMN product_quantity TYPE SMALLINT
+```
+
+Dates must be typed correctly otherwise you cannot utilise time dependent queries as SQL will not understand the comparisons being made (date1 < date2). Fortunately during cleaning I chose to type cast columns to ```datetime64``` with pandas and this means SQL will provide the correct assumption that these are dates, subsequently providing the associated date types in pgadmin, such as ```date```
+
+Along with type casting, additional columns were added to provide more insight into the data and help with categorisation. An example of this is providing a ```weight_class``` column in the products table that will divide the data into buckets for weights between 2:40:140:140+. 
+
+```sql
+ALTER TABLE dim_products
+add COLUMN weight_class varchar(14)
+
+update dim_products
+set weight_class = 'Light'
+where weight < 2
+```
+
 ### Create primary key relations
+
+Now that the tables have the appropriate data types, the primary keys to each of the tables prefixed with dim are added. Each table will serve the orders_table which will be the single source of truth for the orders. The can be done in SQL using the code below which adds a primary key constraint in ```table``` on the data ```variable```.
+
+```sql
+ALTER TABLE table
+ADD PRIMARY KEY (variable);
+```
+
+However it is also possible to use pgadmin to simply change these with its ```primary key?``` toggle indicated in the screenshot shown.
+
+![primary_key_relation](/images/primary_key_relation.png)
 
 ### Create foreign key constraints
 
+The issue with linking foreign keys to primary keys is that if the data is not matched an error will be thrown. In connecting the orders table to each of the 5 primary keys, 3 worked as was the case for ```product_code``` for example which returned the constraint correctly implemented.
 
+```sql
+ALTER TABLE orders_table
+add foreign key (product_code) references
+dim_products(product_code)
+```
+
+Whilst 2 others returned an error. This occurs because there are entries within the orders table that do not appear in the parent table with the primary key. To fix this, it is okay to simply remove those entries as without links to the other tables, these rows are not useful.
+
+```sql
+DELETE *
+FROM orders_table
+WHERE user_uuid NOT IN (SELECT user_uuid FROM dim_users);
+
+ALTER TABLE orders_table
+add foreign key (user_uuid) references
+dim_users(user_uuid)
+```
 
 ## M3 - Querying the data
 
+The set of tasks listed below provide insight into the business' return and statistics.         
+
 ### Task 1: How many stores does the business have and in which countries?
+
+```sql
+SELECT country_code as country, count(*) from dim_store_details
+GROUP BY country_code
+```
+
+![task_1](/images/task_1.png)
 
 ### Task 2: Which locations currently have the most stores?
 
+```sql
+SELECT locality, count(*) as total_no_stores
+from dim_store_details
+GROUP BY locality
+order by count(*) desc
+limit 7
+```
+![task_2](/images/task_2.png)
+
 ### Task 3: Which months product the average highest cost of sales typically?
+
+```sql
+select sum(dim_products.product_price * product_quantity) as total_sales, 
+dim_date_times.month
+from orders_table
+join dim_date_times on orders_table.date_uuid = dim_date_times.date_uuid
+join dim_products on orders_table.product_code = dim_products.product_code
+GROUP by dim_date_times.month
+order by sum(dim_products.product_price * product_quantity) desc
+limit 6
+```
+![task_3](/images/task_3.png)
 
 ### Task 4: How many sales are coming from online?
 
+```sql
+select sum(number_of_sales) as number_of_sales, 
+sum(product_quantity_count) as product_quantity_count, 
+location
+from 
+(
+select count(*) as number_of_sales, 
+sum(product_quantity) as product_quantity_count,
+case dim_store_details.store_type 
+when 'Web Portal' then 'Web'
+else 'Offline' end as location
+from orders_table
+join dim_store_details on 
+orders_table.store_code = dim_store_details.store_code
+group by dim_store_details.store_type
+) 
+as derivedTable
+group by location
+order BY LOCATION desc
+```
+![task_4](/images/task_4.png)
+
 ### Task 5: What percentage of sales come through each type of store?
+
+```sql
+select store_type, sum(product_quantity * product_price) as total_sales,
+(sum(product_quantity * product_price) * 100 )/SUM(sum(product_quantity * product_price)) over () as Percentage_of_Total
+from orders_table
+join dim_store_details 
+on orders_table.store_code = dim_store_details.store_code
+join dim_products
+on orders_table.product_code = dim_products.product_code
+group by store_type
+order by sum(product_quantity * product_price) desc
+```
+![task_5](/images/task_5.png)
 
 ### Task 6: Which month in each year product the highest cost of sales?
 
+```sql
+select sum(product_quantity * product_price) as total_sales,
+year, month
+from orders_table
+join dim_date_times 
+on orders_table.date_uuid = dim_date_times.date_uuid
+join dim_products
+on orders_table.product_code = dim_products.product_code
+group by year, month
+order by sum(product_quantity * product_price) desc
+limit 10
+```
+![task_6](/images/task_6.png)
+
 ### Task 7: What is our staff headcount?
+
+```sql
+select sum(staff_numbers) as total_staff_numbers, country_code 
+from dim_store_details
+group by country_code
+order BY sum(staff_numbers) desc
+```
+![task_7](/images/task_7.png)
 
 ### Task 8: Which German store type is selling the most?
 
-### How quickly is the company making sales?
+```sql
+select sum(product_price * product_quantity) as total_sales,
+store_type, country_code 
+from orders_table
+join dim_products on
+orders_table.product_code = dim_products.product_code
+join dim_store_details on
+orders_table.store_code = dim_store_details.store_code
+where country_code = 'DE'
+group by store_type, country_code
+order BY sum(product_price * product_quantity)
+```
+![task_8](/images/task_8.png)
+
+### Task 9: How quickly is the company making sales?
+
+```sql
+select year, avg(actual_time) 
+from 
+(
+select year,
+iso - lead (iso, 1) over (order by year, month, day, timestamp) as actual_time
+from dim_date_times
+group by year, month, day, timestamp, iso
+) 
+as firstset
+group by year
+order by avg(actual_time) 
+```
+![task_9](/images/task_9.png)
